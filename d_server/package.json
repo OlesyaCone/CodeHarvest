@@ -11,12 +11,13 @@
     "@types/express": "^5.0.5",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.10.1",
+    "@types/puppeteer": "^5.4.7",
     "jest": "^30.2.0",
     "nodemon": "^3.1.11",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
   },
-    "scripts": {
+  "scripts": {
     "start": "nodemon src/index.ts",
     "build": "tsc",
     "dev": "node src/index.ts",
