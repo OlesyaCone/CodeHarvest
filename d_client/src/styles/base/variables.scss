@@ -20,7 +20,7 @@ $spacing-unit: 16px;
   --primary-dark: #2a7a68;
   --button-text: #ffffff;
   --rain-color: #{$sea-green};
-  --shadow: rgba(0, 0, 0, 0.1);
+  --shadow: #0000001a;
   --page-gradient: linear-gradient(135deg, var(--background) 0%, var(--accent-light) 100%);
 }
 
@@ -37,6 +37,6 @@ $spacing-unit: 16px;
   --primary-dark: #8ee4af;
   --button-text: #0a2a42;
   --rain-color: #{$light-green};
-  --shadow: rgba(0, 0, 0, 0.3);
+  --shadow: #0000004d;
   --page-gradient: linear-gradient(135deg, var(--background) 0%, var(--accent-light) 100%);
 }

@@ -4,7 +4,8 @@
   box-sizing: border-box;
 }
 
-html, body {
-  overflow: hidden;
-  height: 100%;
+html,
+body {
+  background: var(--page-gradient);
+  font-family: "Cuprum", sans-serif;
 }

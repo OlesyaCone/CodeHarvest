@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRoute } from 'vue-router'
-
-const route = useRoute()
 
 const messages = [
   "Анализируем HTML структуру...",
   "Извлекаем CSS стили...", 
   "Собираем цветовую палитру...",
-  "Формируем дизайн-токены...",
   "Готовим результат..."
 ]
 
@@ -19,8 +15,6 @@ const currentUrl = ref('')
 let intervalId: number
 
 onMounted(() => {
-  currentUrl.value = route.query.url as string
-  
   intervalId = setInterval(() => {
     currentIndex.value = (currentIndex.value + 1) % messages.length
     currentMessage.value = messages[currentIndex.value]

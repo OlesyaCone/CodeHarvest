@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import "./styles/main.scss";
+import Start from "./components/Start.vue";
+import Content from "./components/Content.vue";
 import { ref, onMounted } from "vue";
+import { useUrlStore } from "./store/url";
 
 const isDark = ref(false);
+const urlStore = useUrlStore();
 
 const toggleTheme = (): void => {
   applyTheme();
@@ -26,6 +29,9 @@ onMounted(() => {
 
 <template>
   <div id="app">
+    <Content v-if="urlStore.data || urlStore.loading"></Content>
+    <Start v-else></Start>
+
     <label class="theme-toggle">
       <input
         type="checkbox"
@@ -60,7 +66,5 @@ onMounted(() => {
         </g>
       </svg>
     </label>
-    
-    <router-view />
   </div>
 </template>

@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { SiteExtractor } from "../services/puppeteerService";
-import { Collecting } from "../types/type";  
 
 class ScrapeController {
   async getCode(req: Request, res: Response) {
@@ -8,43 +7,41 @@ class ScrapeController {
       const extractor = new SiteExtractor();
       const url = req.query.url as string;
 
-      const [html, css] = await Promise.all([
-        extractor.extractSiteHTML(url),
-        extractor.extractSiteCss(url),
-      ]);
+      const { html, css } = await extractor.extractBoth(url);
 
       res.json({ success: true, html, css, url });
     } catch (error) {
       const err = error as Error;
-
-      if (err.message.includes("Navigation timeout")) {
-        return res.status(408).json({
-          success: false,
-          error: "Сайт не отвежает слишком долго",
-        });
-      }
-      if (err.message.includes("ERR_NAME_NOT_RESOLVED")) {
+      const errorStr = String(error);
+      
+      if (errorStr.includes("ERR_NAME_NOT_RESOLVED")) {
         return res.status(400).json({
           success: false,
-          error: "Неверный адрес сайта",
+          error: "Неверный адрес сайта"
         });
       }
-      if (err.message.includes("ERR_CONNECTION_REFUSED")) {
+      if (errorStr.includes("Navigation timeout")) {
+        return res.status(408).json({
+          success: false,
+          error: "Сайт не отвежает слишком долго"
+        });
+      }
+      if (errorStr.includes("ERR_CONNECTION_REFUSED")) {
         return res.status(503).json({
           success: false,
-          error: "Сайт временно недоступен",
+          error: "Сайт временно недоступен"
         });
       }
-      if (err.message.includes("ERR_ABORTED")) {
+      if (errorStr.includes("ERR_ABORTED")) {
         return res.status(403).json({
           success: false,
-          error: "Доступ к сайту заблокирован",
+          error: "Доступ к сайту заблокирован"
         });
       }
 
       return res.status(500).json({
         success: false,
-        error: "Ошибка при получении данных с сайта",
+        error: "Ошибка при получении данных с сайта"
       });
     }
   }

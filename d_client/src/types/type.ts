@@ -1,3 +1,17 @@
+export type Collecting = CollectingSuccess | CollectingError;
+
+export type CollectingSuccess = {
+  success: true;
+  url: string;
+  html: string;
+  css: string;
+};
+
+export type CollectingError = {
+  success: false;
+  error: string;
+};
+
 export type WebsiteAnalysis = {
   url: string;
   analyzedAt: string;
@@ -16,7 +30,6 @@ export type DetectedComponent = {
   name: string;
   type: string;
   html: string;
-  css: string;
   classes: string[];
   frequency: number;
 };

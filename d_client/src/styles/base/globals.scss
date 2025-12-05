@@ -1,13 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=Cuprum:ital,wght@0,400..700;1,400..700&display=swap");
-
 .page {
   height: 100vh;
   width: 100vw;
-  background: var(--page-gradient);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "Cuprum", sans-serif;
   position: relative;
   overflow: hidden;
 }
