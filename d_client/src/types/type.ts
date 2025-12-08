@@ -5,6 +5,7 @@ export type CollectingSuccess = {
   url: string;
   html: string;
   css: string;
+  screenshot: string;
 };
 
 export type CollectingError = {

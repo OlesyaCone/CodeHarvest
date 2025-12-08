@@ -7,9 +7,16 @@ class ScrapeController {
       const extractor = new SiteExtractor();
       const url = req.query.url as string;
 
-      const { html, css } = await extractor.extractBoth(url);
+      const { html, css, screenshot } = await extractor.extractAll(url);
 
-      res.json({ success: true, html, css, url });
+      res.json({ 
+        success: true, 
+        html, 
+        css, 
+        screenshot, 
+        url 
+      });
+      
     } catch (error) {
       const err = error as Error;
       const errorStr = String(error);
