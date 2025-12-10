@@ -17,19 +17,57 @@ class SiteExtractor {
       await page.goto(url, { waitUntil: "networkidle0" });
 
       const [html, css, screenshot] = await Promise.all([
-        page.content(),
+        page.evaluate(() => {
+          const clone = document.cloneNode(true) as Document;
+          
+          const iterator = document.createNodeIterator(
+            clone,
+            NodeFilter.SHOW_COMMENT,
+            null
+          );
+          
+          let node: Node | null;
+          const comments: Comment[] = [];
+          
+          while ((node = iterator.nextNode())) {
+            if (node.nodeType === Node.COMMENT_NODE) {
+              comments.push(node as Comment);
+            }
+          }
+          
+          comments.forEach((comment: Comment) => {
+            if (comment.parentNode) {
+              comment.parentNode.removeChild(comment);
+            }
+          });
+          
+          const scripts = clone.querySelectorAll('script');
+          scripts.forEach((script: Element) => script.remove());
+          
+          const allElements = clone.querySelectorAll('*');
+          allElements.forEach((el: Element) => {
+            const attrs = el.getAttributeNames();
+            attrs.forEach((attr: string) => {
+              if (attr.startsWith('on')) {
+                el.removeAttribute(attr);
+              }
+            });
+          });
+          
+          return clone.documentElement.outerHTML;
+        }),
 
         page.evaluate(async () => {
           let allCSS = "";
 
           const styleTags = Array.from(document.querySelectorAll("style"));
-          styleTags.forEach((style) => {
+          styleTags.forEach((style: HTMLStyleElement) => {
             allCSS += style.textContent + "\n";
           });
 
           const linkTags = Array.from(
             document.querySelectorAll('link[rel="stylesheet"]')
-          );
+          ) as HTMLLinkElement[];
 
           for (const link of linkTags) {
             const href = link.getAttribute("href");
@@ -41,7 +79,7 @@ class SiteExtractor {
                 allCSS += cssText + "\n";
               }
             } catch (error) {
-              console.warn("Failed to fetch CSS:", href);
+              console.log("Failed to fetch CSS:", href);
             }
           }
 
@@ -52,7 +90,7 @@ class SiteExtractor {
           encoding: "base64",
           type: "png",
           fullPage: true,
-        }),
+        }) as Promise<string>,
       ]);
 
       await browser.close();
