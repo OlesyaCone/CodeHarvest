@@ -51,11 +51,6 @@ const title = computed(() => {
   if (errorMessage.value) {
     return errorMessage.value;
   }
-
-  if (urlStore.data?.success === false) {
-    const errorData = urlStore.data as { success: false; error: string };
-    return errorData.error;
-  }
   return "Извлекайте HTML и CSS с любого сайта. Получайте готовые стили и разметку в один клик.";
 });
 </script>

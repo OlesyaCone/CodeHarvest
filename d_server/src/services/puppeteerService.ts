@@ -19,45 +19,46 @@ class SiteExtractor {
       const [html, css, screenshot] = await Promise.all([
         page.evaluate(() => {
           const clone = document.cloneNode(true) as Document;
-          
+
           const iterator = document.createNodeIterator(
             clone,
             NodeFilter.SHOW_COMMENT,
             null
           );
-          
+
           let node: Node | null;
           const comments: Comment[] = [];
-          
+
           while ((node = iterator.nextNode())) {
             if (node.nodeType === Node.COMMENT_NODE) {
               comments.push(node as Comment);
             }
           }
-          
+
           comments.forEach((comment: Comment) => {
             if (comment.parentNode) {
               comment.parentNode.removeChild(comment);
             }
           });
-          
-          const scripts = clone.querySelectorAll('script');
+
+          const scripts = clone.querySelectorAll("script");
           scripts.forEach((script: Element) => script.remove());
-          
-          const allElements = clone.querySelectorAll('*');
+
+          const allElements = clone.querySelectorAll("*");
           allElements.forEach((el: Element) => {
             const attrs = el.getAttributeNames();
             attrs.forEach((attr: string) => {
-              if (attr.startsWith('on')) {
+              if (attr.startsWith("on")) {
                 el.removeAttribute(attr);
               }
             });
           });
-          
+
           return clone.documentElement.outerHTML;
         }),
 
         page.evaluate(async () => {
+          const clone = document.cloneNode(true) as Document;
           let allCSS = "";
 
           const styleTags = Array.from(document.querySelectorAll("style"));
@@ -82,6 +83,23 @@ class SiteExtractor {
               console.log("Failed to fetch CSS:", href);
             }
           }
+
+          allCSS = allCSS.replace(/\/\*[\s\S]*?\*\//g, "").trim();
+
+          allCSS = allCSS
+            .split("\n")
+            .filter(line => line.trim() !== "")
+            .join("\n");
+
+          const allElements = clone.querySelectorAll("*");
+          allElements.forEach((el: Element) => {
+            const attrs = el.getAttributeNames();
+            attrs.forEach((attr: string) => {
+              if (attr.startsWith("on")) {
+                el.removeAttribute(attr);
+              }
+            });
+          });
 
           return allCSS;
         }),
