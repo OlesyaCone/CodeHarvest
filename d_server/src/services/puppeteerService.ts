@@ -14,10 +14,12 @@ class SiteExtractor {
     const page = await browser.newPage();
 
     try {
-      await page.goto(url, { waitUntil: "networkidle0" });
+      await page.goto(url, {
+        waitUntil: "load",
+      });
 
       const [html, css, screenshot] = await Promise.all([
-        page.evaluate(() => {
+        page.evaluate(async () => {
           const clone = document.cloneNode(true) as Document;
 
           const iterator = document.createNodeIterator(
@@ -44,6 +46,13 @@ class SiteExtractor {
           const scripts = clone.querySelectorAll("script");
           scripts.forEach((script: Element) => script.remove());
 
+          const cssLinks = clone.querySelectorAll('link[rel="stylesheet"]');
+          cssLinks.forEach((link: Element) => {
+            if (link.parentNode) {
+              link.parentNode.removeChild(link);
+            }
+          });
+
           const allElements = clone.querySelectorAll("*");
           allElements.forEach((el: Element) => {
             const attrs = el.getAttributeNames();
@@ -58,9 +67,8 @@ class SiteExtractor {
         }),
 
         page.evaluate(async () => {
-          const clone = document.cloneNode(true) as Document;
           let allCSS = "";
-
+          
           const styleTags = Array.from(document.querySelectorAll("style"));
           styleTags.forEach((style: HTMLStyleElement) => {
             allCSS += style.textContent + "\n";
@@ -70,43 +78,49 @@ class SiteExtractor {
             document.querySelectorAll('link[rel="stylesheet"]')
           ) as HTMLLinkElement[];
 
+          const fetchedUrls: string[] = []; 
+
           for (const link of linkTags) {
             const href = link.getAttribute("href");
-            try {
-              if (href) {
+            if (href) {
+              try {
                 const absoluteUrl = new URL(href, window.location.href).href;
+                fetchedUrls.push(absoluteUrl); 
+                
                 const response = await fetch(absoluteUrl);
-                const cssText = await response.text();
-                allCSS += cssText + "\n";
+                if (response.ok) {
+                  const cssText = await response.text();
+                  allCSS += cssText + "\n";
+                }
+              } catch (error) {
+                console.log("Не удалось загрузить CSS:", href);
               }
-            } catch (error) {
-              console.log("Failed to fetch CSS:", href);
             }
           }
 
-          allCSS = allCSS.replace(/\/\*[\s\S]*?\*\//g, "").trim();
-
-          allCSS = allCSS
-            .split("\n")
-            .filter(line => line.trim() !== "")
-            .join("\n");
-
-          const allElements = clone.querySelectorAll("*");
-          allElements.forEach((el: Element) => {
-            const attrs = el.getAttributeNames();
-            attrs.forEach((attr: string) => {
-              if (attr.startsWith("on")) {
-                el.removeAttribute(attr);
+          try {
+            const styleSheets = Array.from(document.styleSheets);
+            for (const sheet of styleSheets) {
+              try {
+                if (sheet.cssRules) {
+                  for (const rule of sheet.cssRules) {
+                    allCSS += rule.cssText + "\n";
+                  }
+                }
+              } catch (e) {
               }
-            });
-          });
+            }
+          } catch (e) {
+          }
 
+          allCSS = allCSS.replace(/\/\*[\s\S]*?\*\//g, "").trim();
           return allCSS;
         }),
 
         page.screenshot({
           encoding: "base64",
-          type: "png",
+          type: "jpeg",
+          quality: 80,
           fullPage: true,
         }) as Promise<string>,
       ]);
@@ -114,8 +128,8 @@ class SiteExtractor {
       await browser.close();
 
       return {
-        html,
-        css,
+        html,   
+        css,   
         screenshot,
       };
     } catch (error) {

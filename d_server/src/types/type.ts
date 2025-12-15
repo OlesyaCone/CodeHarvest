@@ -4,12 +4,16 @@ export type WebsiteAnalysis = {
   originalHTML: string;
   originalCSS: string;
   detectedComponents: DetectedComponent[];
-  usedFramework: string | null;
   allClasses: string[];
-  allFonts: string[];
+  allFonts: allFonts[];
   allColors: string[];
   cssComponents: CSSBlock[];
   classUsage: ClassUsage[];
+};
+
+export type allFonts = {
+  html: string;
+  css: string;
 };
 
 export type DetectedComponent = {
@@ -18,7 +22,6 @@ export type DetectedComponent = {
   html: string;
   css: string;
   classes: string[];
-  frequency: number;
 };
 
 export type CSSBlock = {

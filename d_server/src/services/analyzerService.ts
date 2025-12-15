@@ -9,31 +9,27 @@ class Analysis {
         const { url, html, css } = data;
         
 
-        const detectedComponents = this.detectComponents(html);
-        const allClasses = this.extractClasses(html);
-        const allFonts = this.extractFonts(css);
+        // const detectedComponents = this.detectComponents(html);
+        // const allClasses = this.extractClasses(html);
+        const allFonts = this.extractFonts(css,html);
         const allColors = this.extractColors(css);
-        const usedFramework = this.detectFramework(html, css);
-        const cssComponents = this.parseCSSBlocks(css);
-        const classUsage = this.analyzeClassUsage(html, css);
+        // const cssComponents = this.parseCSSBlocks(css);
+        // const classUsage = this.analyzeClassUsage(html, css);
         
         const analysis: WebsiteAnalysis = {
             url: url,                    
             analyzedAt: new Date().toISOString(), 
             originalHTML: html,         
             originalCSS: css,            
-            detectedComponents,         
-            usedFramework,              
-            allClasses,                 
+            // detectedComponents,                     
+            // allClasses,                 
             allFonts,                   
             allColors,                  
-            cssComponents,              
-            classUsage                  
+            // cssComponents,              
+            // classUsage                  
         };
         
         return analysis;
     }
-    async detectComponents(html) {
-
-    }
+    
 }
