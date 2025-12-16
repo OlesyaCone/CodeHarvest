@@ -2,26 +2,26 @@
   width: 300px;
   height: 400px;
   margin: 0 auto;
-  background-color: var(--surface); 
+  background-color: var(--surface);
   border-radius: 8px;
-  box-shadow: 0px 10px 10px var(--shadow); 
+  box-shadow: 0px 10px 10px var(--shadow);
   transition: 0.5s;
-  border: 1px solid var(--border); 
+  border: 1px solid var(--border);
 }
 
 .card:hover {
   transform: translateY(-7px);
-  box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.3); 
+  box-shadow: 0px 10px 10px rgba(0, 0, 0, 0.3);
 }
 
 .top {
   display: flex;
   align-items: center;
   padding: 0 10px;
-  background-color: var(--primary); 
-  border-radius: 8px 8px 0 0; 
+  background-color: var(--primary);
+  border-radius: 8px 8px 0 0;
   height: 30px;
-  justify-content: space-between; 
+  justify-content: space-between;
 }
 
 .top-left {
@@ -32,10 +32,10 @@
 
 .copy {
   box-sizing: border-box;
-  width: 24px; 
+  width: 24px;
   height: 24px;
   border-radius: 4px;
-  background-color: var(--surface); 
+  background-color: var(--surface);
   color: var(--text-color);
   border: 1px solid var(--border);
   cursor: pointer;
@@ -46,11 +46,11 @@
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  margin-left: auto; 
+  margin-left: auto;
 }
 
 .copy:hover {
-  background-color: var(--accent); 
+  background-color: var(--accent);
   border-color: var(--primary);
 }
 
@@ -67,7 +67,7 @@
   left: 50%;
   transform: translateX(-50%);
   white-space: nowrap;
-  font: 11px 'Menlo', 'Roboto Mono', monospace;
+  font: 11px "Menlo", "Roboto Mono", monospace;
   color: var(--text-color);
   background: var(--surface);
   padding: 4px 8px;
@@ -155,8 +155,8 @@
 
 #title2 {
   color: var(--button-text);
-  padding-left: 10px; 
-  font-size: 13px; 
+  padding-left: 10px;
+  font-size: 13px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -170,12 +170,12 @@
   width: 100%;
   height: 320px;
   resize: none;
-  background-color: var(--background); 
+  background-color: var(--background);
   border-radius: 5px;
   border: 1px solid var(--border);
-  color: var(--text-color); 
+  color: var(--text-color);
   padding: 10px;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 14px;
   line-height: 1.4;
 }
@@ -183,4 +183,8 @@
   outline: none !important;
   border-color: var(--primary);
   box-shadow: 0 0 0 2px var(--primary-light);
+}
+
+.font-example {
+  color: var(--text-color);
 }

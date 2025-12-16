@@ -6,6 +6,8 @@ export type CollectingSuccess = {
   html: string;
   css: string;
   screenshot: string;
+  allFonts: allFonts;
+  allColors: string[];
 };
 
 export type CollectingError = {
@@ -13,36 +15,7 @@ export type CollectingError = {
   error: string;
 };
 
-export type WebsiteAnalysis = {
-  url: string;
-  analyzedAt: string;
-  originalHTML: string;
-  originalCSS: string;
-  detectedComponents: DetectedComponent[];
-  usedFramework: string | null;
-  allClasses: string[];
-  allFonts: string[];
-  allColors: string[];
-  cssComponents: CSSBlock[];
-  classUsage: ClassUsage[];
-};
-
-export type DetectedComponent = {
-  name: string;
-  type: string;
+export type allFonts = {
   html: string;
-  classes: string[];
-  frequency: number;
-};
-
-export type CSSBlock = {
-  selector: string;
-  cssCode: string;
-  appliesTo: string[];
-};
-
-export type ClassUsage = {
-  className: string;
-  usedInComponents: string[];
-  cssRules: string;
+  css: string;
 };

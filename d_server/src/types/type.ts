@@ -1,14 +1,23 @@
-export type WebsiteAnalysis = {
+export type Collecting = CollectingSuccess | CollectingError;
+
+export type CollectingSuccess = {
+  success: true;
   url: string;
-  analyzedAt: string;
-  originalHTML: string;
-  originalCSS: string;
-  detectedComponents: DetectedComponent[];
-  allClasses: string[];
-  allFonts: allFonts[];
+  html: string;
+  css: string;
+  screenshot: string;
+  allFonts: allFonts;
   allColors: string[];
-  cssComponents: CSSBlock[];
-  classUsage: ClassUsage[];
+};
+
+export type CollectingError = {
+  success: false;
+  error: string;
+};
+
+export type Baza = {
+  allFonts: allFonts;
+  allColors: string[];
 };
 
 export type allFonts = {
