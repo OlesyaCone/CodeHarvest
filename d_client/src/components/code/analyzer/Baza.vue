@@ -175,14 +175,12 @@ const copyItem = (text: string, key: string) => {
 
     <div class="colors-section">
       <h2 class="page-description">Цвета ({{ colorsList.length }})</h2>
-      <div class="colors-grid">
+      <div class="colors-scroll-container">
         <div
           v-for="(color, index) in colorsList"
           :key="index"
           class="color-item"
-          :style="{ backgroundColor: color }"
         >
-          <span class="color-hex">{{ color }}</span>
           <button
             class="color-copy-btn copy"
             @click="copyItem(color, 'color-' + index)"
@@ -235,6 +233,13 @@ const copyItem = (text: string, key: string) => {
               </svg>
             </span>
           </button>
+          
+          <div 
+            class="color-preview" 
+            :style="{ backgroundColor: color }"
+          ></div>
+          
+          <span class="color-hex">{{ color }}</span>
         </div>
       </div>
     </div>

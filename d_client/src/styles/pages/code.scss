@@ -1,8 +1,9 @@
 .code {
-  width: 100%;
+  width: calc(100% - 12px);
   height: 100vh;
   padding: 20px;
   box-sizing: border-box;
+  animation: fadeIn 0.5s ease-out;
 }
 
 .data-grid {
@@ -69,26 +70,52 @@
   overflow: auto;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
 @media (max-width: 768px) {
+  .code {
+    width: 100%;
+    height: auto;
+    min-height: 100vh;
+    padding: 15px;
+  }
+  
   .data-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
+    grid-template-rows: auto auto auto auto;
     height: auto;
     gap: 15px;
   }
-
+  
   .left-panel {
-    grid-row: auto;
-    grid-column: auto;
-    height: 50vh;
+    grid-row: 1;
+    grid-column: 1;
+    height: 40vh;
   }
-
+  
   .right-panel {
-    grid-column: auto;
-    height: auto;
+    grid-column: 1;
+    grid-row: 2;
+    gap: 15px;
   }
-
+  
   .right-panel .card {
-    height: 300px;
+    height: 250px;
+    min-height: 250px;
+  }
+  
+  .screenshot-container {
+    height: calc(100% - 30px);
+  }
+  
+  .code-container {
+    height: calc(100% - 30px);
   }
 }
