@@ -17,12 +17,18 @@ export type CollectingError = {
 
 export type Baza = {
   allFonts: allFonts;
-  allColors: string[];
+  allColors: allColors;
 };
 
 export type allFonts = {
   html: string;
   css: string;
+};
+
+export type allColors = {
+  dark: string[];
+  light: string[];
+  other: string[];
 };
 
 export type DetectedComponent = {

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { SiteExtractor } from "../services/puppeteer";
-import { FontAndColor } from "../services/baza";
+import { FontAndColor } from "../services/analyzer/fontColor";
 
 class ScrapeController {
   async getCode(req: Request, res: Response) {
@@ -10,7 +10,7 @@ class ScrapeController {
       const url = req.query.url as string;
 
       const { html, css, screenshot } = await extractor.extractAll(url);
-      const { allColors, allFonts } = await baza.extractAll(html, css);
+      const { allColors, allFonts } = await baza.extractAll(css);
 
       res.json({
         success: true,
