@@ -1,16 +1,22 @@
 import { Request, Response } from "express";
 import { SiteExtractor } from "../services/puppeteer";
 import { FontAndColor } from "../services/analyzer/fontColor";
+import { AnalyzerComponents } from "../services/analyzer/components";
 
 class ScrapeController {
   async getCode(req: Request, res: Response) {
     try {
       const extractor = new SiteExtractor();
       const baza = new FontAndColor();
+      const componentsAnalyzer = new AnalyzerComponents();
       const url = req.query.url as string;
 
       const { html, css, screenshot } = await extractor.extractAll(url);
-      const { allColors, allFonts } = await baza.extractAll(css);
+      
+      const [fontsAndColors, allComponents] = await Promise.all([
+        baza.extractAll(css),
+        componentsAnalyzer.extractAll(css, html)
+      ]);
 
       res.json({
         success: true,
@@ -18,8 +24,9 @@ class ScrapeController {
         css,
         screenshot,
         url,
-        allColors,
-        allFonts,
+        allColors: fontsAndColors.allColors,
+        allFonts: fontsAndColors.allFonts,
+        allComponents
       });
     } catch (error) {
       const err = error as Error;

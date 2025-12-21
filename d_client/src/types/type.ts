@@ -25,3 +25,25 @@ export type allColors = {
   light: string[];
   other: string[];
 };
+
+export type AllComponents = {
+  components: Component[];
+  location: Location;
+};
+
+export type Component = {
+  class: Class[];
+  css: string;
+  html: string;
+};
+
+export type Class = {
+  name: string;
+  position: number;
+};
+
+export type Location = {
+  class: Class[];
+  css: string;
+  html: string;
+};

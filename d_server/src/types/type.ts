@@ -8,6 +8,7 @@ export type CollectingSuccess = {
   screenshot: string;
   allFonts: allFonts;
   allColors: string[];
+  AllComponents: AllComponents;
 };
 
 export type CollectingError = {
@@ -31,22 +32,24 @@ export type allColors = {
   other: string[];
 };
 
-export type DetectedComponent = {
-  name: string;
-  type: string;
-  html: string;
+export type AllComponents = {
+  components: Component[];
+  location: Location;
+};
+
+export type Component = {
+  class: Class[];
   css: string;
-  classes: string[];
+  html: string;
 };
 
-export type CSSBlock = {
-  selector: string;
-  cssCode: string;
-  appliesTo: string[];
+export type Class = {
+  name: string;
+  position: number;
 };
 
-export type ClassUsage = {
-  className: string;
-  usedInComponents: string[];
-  cssRules: string;
+export type Location = {
+  class: Class[];
+  css: string;
+  html: string;
 };
