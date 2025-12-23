@@ -1,114 +1,216 @@
 import { Component, Location, AllComponents, Class } from "../../types/type";
 
+interface CssBlock {
+  selector: string;
+  content: string;
+  fullBlock: string;
+}
+
 class AnalyzerComponents {
   async extractAll(css: string, html: string): Promise<AllComponents> {
+    const { uniqueClasses, classPositions, htmlElementsByClass } = this.parseHtmlOnce(html);
+    const cssIndex = this.createCssIndex(css);
+    const components = this.buildComponents(uniqueClasses, htmlElementsByClass, cssIndex, classPositions);
+    
     return {
-      components: this.extractComponents(css, html),
-      location: this.extractLocation(css, html),
+      components,
+      location: {
+        class: classPositions,
+        css: this.filterLayoutCss(css),
+        html: this.makeSimpleHtml(html),
+      },
     };
   }
 
-  private extractComponents(css: string, html: string): Component[] {
-    const components: Component[] = [];
-    const classRegex = /class=["']([^"']+)["']/gi;
-    const foundClasses = new Set<string>();
-    
-    let classMatch;
-    while ((classMatch = classRegex.exec(html)) !== null) {
-      classMatch[1].split(/\s+/).forEach(cls => {
-        if (cls.trim()) foundClasses.add(cls.trim());
-      });
-    }
-
-    for (const className of Array.from(foundClasses)) {
-      const componentCss = this.findCssForClass(css, className);
-      const componentHtml = this.findHtmlForClass(html, className);
-      
-      components.push({
-        class: [{ name: className, position: 0 }],
-        css: componentCss,
-        html: componentHtml,
-      });
-    }
-
-    return components;
-  }
-
-  private extractLocation(css: string, html: string): Location {
-    return {
-      class: this.findClassPositions(html),
-      css: this.filterLayoutCss(css),
-      html: this.makeSimpleHtml(html),
-    };
-  }
-
-  private findCssForClass(css: string, className: string): string {
-    const cssRules: string[] = [];
-    const cssRegex = new RegExp(`[^{}]*\\.${className}[^{}]*{[^}]*}`, 'gi');
-    
-    let cssMatch;
-    while ((cssMatch = cssRegex.exec(css)) !== null) {
-      cssRules.push(cssMatch[0]);
-    }
-    
-    return cssRules.join('\n\n');
-  }
-
-  private findHtmlForClass(html: string, className: string): string {
-    const htmlElements: string[] = [];
-    const htmlRegex = new RegExp(`<([^>]*)class=["'][^"']*\\b${className}\\b[^"']*["'][^>]*>`, 'gi');
-    
-    let htmlMatch;
-    while ((htmlMatch = htmlRegex.exec(html)) !== null) {
-      htmlElements.push(htmlMatch[0]);
-    }
-    
-    return htmlElements.join('\n');
-  }
-
-  private findClassPositions(html: string): Class[] {
+  private parseHtmlOnce(html: string): {
+    uniqueClasses: Set<string>;
+    classPositions: Class[];
+    htmlElementsByClass: Map<string, string[]>;
+  } {
+    const uniqueClasses = new Set<string>();
     const classes: Class[] = [];
-    const tagRegex = /<([^>]+)>/g;
+    const htmlByClass = new Map<string, string[]>();
     const depthStack: string[] = [];
     
+    const tagRegex = /<([^>]+)>/g;
     let tagMatch;
+    
     while ((tagMatch = tagRegex.exec(html)) !== null) {
-      const fullTag = tagMatch[1];
-      
-      if (fullTag.startsWith('/')) {
+      const tagContent = tagMatch[1];
+      const isClosingTag = tagContent.startsWith('/');
+      const fullTag = tagMatch[0];
+
+      if (isClosingTag) {
         depthStack.pop();
         continue;
       }
-
-      if (fullTag.includes('/') || 
-          fullTag.includes('br ') || 
-          fullTag.includes('img ') || 
-          fullTag.includes('input ') ||
-          fullTag.includes('meta ') ||
-          fullTag.includes('link ')) {
-      } else {
+      
+      const isSelfClosing = this.isSelfClosingTag(tagContent);
+      
+      if (!isSelfClosing) {
         depthStack.push('item');
       }
-
-      const classAttrMatch = /class=["']([^"']+)["']/.exec(fullTag);
+      
+      const classAttrMatch = /class=["']([^"']+)["']/.exec(tagContent);
       if (classAttrMatch) {
-        const position = depthStack.length - 1;
-        classAttrMatch[1].split(/\s+/).forEach(cls => {
-          if (cls.trim()) {
-            classes.push({ name: cls.trim(), position: position });
+        const currentDepth = Math.max(0, depthStack.length - 1);
+        const classNames = classAttrMatch[1].split(/\s+/);
+        
+        classNames.forEach(cls => {
+          const className = cls.trim();
+          if (!className) return;
+          
+          uniqueClasses.add(className);
+          classes.push({ name: className, position: currentDepth });
+
+          if (!htmlByClass.has(className)) {
+            htmlByClass.set(className, []);
           }
+          htmlByClass.get(className)!.push(fullTag);
         });
       }
     }
-
-    const uniqueClasses = new Map<string, Class>();
+    
+    const uniquePositions = new Map<string, Class>();
     classes.forEach(cls => {
-      if (!uniqueClasses.has(cls.name) || uniqueClasses.get(cls.name)!.position > cls.position) {
-        uniqueClasses.set(cls.name, cls);
+      if (!uniquePositions.has(cls.name) || 
+          uniquePositions.get(cls.name)!.position > cls.position) {
+        uniquePositions.set(cls.name, cls);
       }
     });
+    
+    return {
+      uniqueClasses,
+      classPositions: Array.from(uniquePositions.values()),
+      htmlElementsByClass: htmlByClass,
+    };
+  }
 
-    return Array.from(uniqueClasses.values());
+  private isSelfClosingTag(tagContent: string): boolean {
+    return tagContent.includes('/') || 
+           tagContent.includes('br ') || 
+           tagContent.includes('img ') || 
+           tagContent.includes('input ') ||
+           tagContent.includes('meta ') ||
+           tagContent.includes('link ') ||
+           tagContent.includes('hr ') ||
+           tagContent.includes('source ') ||
+           tagContent.includes('track ') ||
+           tagContent.includes('embed ') ||
+           tagContent.includes('col ') ||
+           tagContent.includes('area ') ||
+           tagContent.includes('base ') ||
+           tagContent.includes('wbr ');
+  }
+
+  private createCssIndex(css: string): Map<string, string[]> {
+    const cssIndex = new Map<string, string[]>();
+    
+    const cssBlocks = this.splitCssIntoBlocks(css);
+
+    cssBlocks.forEach(block => {
+      const classesInBlock = this.extractClassesFromSelector(block.selector);
+      
+      classesInBlock.forEach(className => {
+        if (!cssIndex.has(className)) {
+          cssIndex.set(className, []);
+        }
+        cssIndex.get(className)!.push(block.fullBlock);
+      });
+    });
+    
+    return cssIndex;
+  }
+
+  private splitCssIntoBlocks(css: string): CssBlock[] {
+    const blocks: CssBlock[] = [];
+    let i = 0;
+    let braceCount = 0;
+    let start = 0;
+    let inSelector = true;
+    let selector = '';
+
+    const cleanedCss = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    
+    while (i < cleanedCss.length) {
+      const char = cleanedCss[i];
+      
+      if (char === '{') {
+        braceCount++;
+        if (braceCount === 1) {
+          selector = cleanedCss.substring(start, i).trim();
+          start = i + 1;
+          inSelector = false;
+        }
+      } else if (char === '}') {
+        braceCount--;
+        if (braceCount === 0) {
+          const content = cleanedCss.substring(start, i).trim();
+          const fullBlock = cleanedCss.substring(start - selector.length - 1, i + 1).trim();
+          
+          blocks.push({
+            selector,
+            content,
+            fullBlock,
+          });
+          
+          start = i + 1;
+          inSelector = true;
+        }
+      }
+      
+      i++;
+    }
+    
+    return blocks;
+  }
+
+  private extractClassesFromSelector(selector: string): string[] {
+    const classes = new Set<string>();
+    
+    const classRegex = /\.([a-zA-Z_][a-zA-Z0-9_-]*)/g;
+    let match;
+    
+    while ((match = classRegex.exec(selector)) !== null) {
+      const className = match[1];
+      if (!className.startsWith(':')) {
+        classes.add(className);
+      }
+    }
+    
+    return Array.from(classes);
+  }
+
+  private buildComponents(
+    uniqueClasses: Set<string>,
+    htmlByClass: Map<string, string[]>,
+    cssIndex: Map<string, string[]>,
+    classPositions: Class[]
+  ): Component[] {
+    const components: Component[] = [];
+    const positionMap = new Map<string, number>();
+    
+    classPositions.forEach(pos => {
+      positionMap.set(pos.name, pos.position);
+    });
+    
+    for (const className of uniqueClasses) {
+      const htmlElements = htmlByClass.get(className) || [];
+      const cssRules = cssIndex.get(className) || [];
+
+      if (htmlElements.length > 0 || cssRules.length > 0) {
+        components.push({
+          class: [{ 
+            name: className, 
+            position: positionMap.get(className) || 0 
+          }],
+          css: cssRules.join('\n\n'),
+          html: htmlElements.join('\n'),
+        });
+      }
+    }
+    
+    return components;
   }
 
   private filterLayoutCss(css: string): string {
@@ -116,25 +218,29 @@ class AnalyzerComponents {
       'display', 'position', 'top', 'right', 'bottom', 'left',
       'grid', 'grid-template', 'grid-area', 'grid-column', 'grid-row',
       'flex', 'flex-direction', 'justify-content', 'align-items',
-      'float', 'clear', 'z-index', 'width', 'height', 'margin', 'padding'
+      'float', 'clear', 'z-index', 'width', 'height', 'margin', 'padding',
+      'max-width', 'min-width', 'max-height', 'min-height',
+      'overflow', 'overflow-x', 'overflow-y', 'visibility',
+      'box-sizing', 'border-box', 'box-shadow', 'border', 'outline',
+      'gap', 'row-gap', 'column-gap', 'order', 'align-self', 'justify-self'
     ];
     
-    const cssBlocks = css.split('}');
+    const blocks = this.splitCssIntoBlocks(css);
     const layoutBlocks: string[] = [];
     
-    for (const block of cssBlocks) {
-      if (!block.trim()) continue;
-      
+    for (const block of blocks) {
       let hasLayout = false;
+      
       for (const prop of layoutProps) {
-        if (block.includes(prop + ':') || block.includes(prop + ' :')) {
+        if (block.content.includes(prop + ':') || 
+            block.content.includes(prop + ' :')) {
           hasLayout = true;
           break;
         }
       }
       
       if (hasLayout) {
-        layoutBlocks.push(block.trim() + '}');
+        layoutBlocks.push(block.fullBlock);
       }
     }
     
@@ -156,12 +262,9 @@ class AnalyzerComponents {
         continue;
       }
       
-      if (tagContent.includes('/') || 
-          tagContent.includes('br ') || 
-          tagContent.includes('img ') || 
-          tagContent.includes('input ') ||
-          tagContent.includes('meta ') ||
-          tagContent.includes('link ')) {
+      if (this.isSelfClosingTag(tagContent)) {
+        const indent = '  '.repeat(currentIndent);
+        lines.push(indent + fullTag);
       } else {
         const indent = '  '.repeat(currentIndent);
         lines.push(indent + fullTag);
