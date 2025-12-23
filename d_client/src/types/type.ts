@@ -8,6 +8,7 @@ export type CollectingSuccess = {
   screenshot: string;
   allFonts: allFonts;
   allColors: allColors;
+  allComponents: AllComponents;
 };
 
 export type CollectingError = {
