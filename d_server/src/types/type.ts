@@ -53,3 +53,11 @@ export type Location = {
   css: string;
   html: string;
 };
+
+export type UXComponentType =
+  | "card"
+  | "button"
+  | "modal"
+  | "input"
+  | "navbar"
+  | "list";

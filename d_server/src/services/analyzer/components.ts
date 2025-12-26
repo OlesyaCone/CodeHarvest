@@ -1,250 +1,174 @@
-import { Component, Location, AllComponents, Class } from "../../types/type";
-
-interface CssBlock {
-  selector: string;
-  content: string;
-  fullBlock: string;
-}
+import { Component, AllComponents, Class, Location } from "../../types/type";
 
 class AnalyzerComponents {
   async extractAll(css: string, html: string): Promise<AllComponents> {
-    const { uniqueClasses, classPositions, htmlElementsByClass } = this.parseHtmlOnce(html);
+    const buttonElements = this.findButtonTags(html);
+    const buttonClasses = this.extractClassesFromButtons(buttonElements);
     const cssIndex = this.createCssIndex(css);
-    const components = this.buildComponents(uniqueClasses, htmlElementsByClass, cssIndex, classPositions);
-    
+    const components = this.buildButtonComponents(buttonElements, buttonClasses, cssIndex);
     return {
       components,
       location: {
-        class: classPositions,
+        class: this.extractClassPositions(html),
         css: this.filterLayoutCss(css),
         html: this.makeSimpleHtml(html),
       },
     };
   }
 
-  private parseHtmlOnce(html: string): {
-    uniqueClasses: Set<string>;
-    classPositions: Class[];
-    htmlElementsByClass: Map<string, string[]>;
-  } {
-    const uniqueClasses = new Set<string>();
-    const classes: Class[] = [];
-    const htmlByClass = new Map<string, string[]>();
-    const depthStack: string[] = [];
-    
-    const tagRegex = /<([^>]+)>/g;
-    let tagMatch;
-    
-    while ((tagMatch = tagRegex.exec(html)) !== null) {
-      const tagContent = tagMatch[1];
-      const isClosingTag = tagContent.startsWith('/');
-      const fullTag = tagMatch[0];
-
-      if (isClosingTag) {
-        depthStack.pop();
-        continue;
-      }
-      
-      const isSelfClosing = this.isSelfClosingTag(tagContent);
-      
-      if (!isSelfClosing) {
-        depthStack.push('item');
-      }
-      
-      const classAttrMatch = /class=["']([^"']+)["']/.exec(tagContent);
-      if (classAttrMatch) {
-        const currentDepth = Math.max(0, depthStack.length - 1);
-        const classNames = classAttrMatch[1].split(/\s+/);
-        
-        classNames.forEach(cls => {
-          const className = cls.trim();
-          if (!className) return;
-          
-          uniqueClasses.add(className);
-          classes.push({ name: className, position: currentDepth });
-
-          if (!htmlByClass.has(className)) {
-            htmlByClass.set(className, []);
-          }
-          htmlByClass.get(className)!.push(fullTag);
-        });
-      }
-    }
-    
-    const uniquePositions = new Map<string, Class>();
-    classes.forEach(cls => {
-      if (!uniquePositions.has(cls.name) || 
-          uniquePositions.get(cls.name)!.position > cls.position) {
-        uniquePositions.set(cls.name, cls);
-      }
-    });
-    
-    return {
-      uniqueClasses,
-      classPositions: Array.from(uniquePositions.values()),
-      htmlElementsByClass: htmlByClass,
-    };
+  private findButtonTags(html: string): string[] {
+    const buttonRegex = /<button[^>]*>.*?<\/button>/gi;
+    const matches = html.match(buttonRegex) || [];
+    return matches;
   }
 
-  private isSelfClosingTag(tagContent: string): boolean {
-    return tagContent.includes('/') || 
-           tagContent.includes('br ') || 
-           tagContent.includes('img ') || 
-           tagContent.includes('input ') ||
-           tagContent.includes('meta ') ||
-           tagContent.includes('link ') ||
-           tagContent.includes('hr ') ||
-           tagContent.includes('source ') ||
-           tagContent.includes('track ') ||
-           tagContent.includes('embed ') ||
-           tagContent.includes('col ') ||
-           tagContent.includes('area ') ||
-           tagContent.includes('base ') ||
-           tagContent.includes('wbr ');
-  }
-
-  private createCssIndex(css: string): Map<string, string[]> {
-    const cssIndex = new Map<string, string[]>();
-    
-    const cssBlocks = this.splitCssIntoBlocks(css);
-
-    cssBlocks.forEach(block => {
-      const classesInBlock = this.extractClassesFromSelector(block.selector);
-      
-      classesInBlock.forEach(className => {
-        if (!cssIndex.has(className)) {
-          cssIndex.set(className, []);
-        }
-        cssIndex.get(className)!.push(block.fullBlock);
-      });
-    });
-    
-    return cssIndex;
-  }
-
-  private splitCssIntoBlocks(css: string): CssBlock[] {
-    const blocks: CssBlock[] = [];
-    let i = 0;
-    let braceCount = 0;
-    let start = 0;
-    let inSelector = true;
-    let selector = '';
-
-    const cleanedCss = css.replace(/\/\*[\s\S]*?\*\//g, '');
-    
-    while (i < cleanedCss.length) {
-      const char = cleanedCss[i];
-      
-      if (char === '{') {
-        braceCount++;
-        if (braceCount === 1) {
-          selector = cleanedCss.substring(start, i).trim();
-          start = i + 1;
-          inSelector = false;
-        }
-      } else if (char === '}') {
-        braceCount--;
-        if (braceCount === 0) {
-          const content = cleanedCss.substring(start, i).trim();
-          const fullBlock = cleanedCss.substring(start - selector.length - 1, i + 1).trim();
-          
-          blocks.push({
-            selector,
-            content,
-            fullBlock,
-          });
-          
-          start = i + 1;
-          inSelector = true;
-        }
-      }
-      
-      i++;
-    }
-    
-    return blocks;
-  }
-
-  private extractClassesFromSelector(selector: string): string[] {
+  private extractClassesFromButtons(buttonElements: string[]): Set<string> {
     const classes = new Set<string>();
     
-    const classRegex = /\.([a-zA-Z_][a-zA-Z0-9_-]*)/g;
-    let match;
-    
-    while ((match = classRegex.exec(selector)) !== null) {
-      const className = match[1];
-      if (!className.startsWith(':')) {
-        classes.add(className);
+    for (const button of buttonElements) {
+      const classMatch = /class=["']([^"']+)["']/.exec(button);
+      if (classMatch) {
+        classMatch[1].split(/\s+/).forEach(cls => {
+          if (cls.trim()) {
+            classes.add(cls.trim());
+          }
+        });
       }
     }
     
-    return Array.from(classes);
+    return classes;
   }
 
-  private buildComponents(
-    uniqueClasses: Set<string>,
-    htmlByClass: Map<string, string[]>,
-    cssIndex: Map<string, string[]>,
-    classPositions: Class[]
+  private buildButtonComponents(
+    buttonElements: string[],
+    buttonClasses: Set<string>,
+    cssIndex: Map<string, string[]>
   ): Component[] {
     const components: Component[] = [];
-    const positionMap = new Map<string, number>();
+    const buttonsByClass = new Map<string, string[]>();
     
-    classPositions.forEach(pos => {
-      positionMap.set(pos.name, pos.position);
-    });
-    
-    for (const className of uniqueClasses) {
-      const htmlElements = htmlByClass.get(className) || [];
-      const cssRules = cssIndex.get(className) || [];
-
-      if (htmlElements.length > 0 || cssRules.length > 0) {
-        components.push({
-          class: [{ 
-            name: className, 
-            position: positionMap.get(className) || 0 
-          }],
-          css: cssRules.join('\n\n'),
-          html: htmlElements.join('\n'),
-        });
+    for (const button of buttonElements) {
+      const classMatch = /class=["']([^"']+)["']/.exec(button);
+      if (classMatch) {
+        const className = classMatch[1].split(/\s+/)[0];
+        if (!buttonsByClass.has(className)) {
+          buttonsByClass.set(className, []);
+        }
+        buttonsByClass.get(className)!.push(button);
+      } else {
+        const className = 'button-no-class';
+        if (!buttonsByClass.has(className)) {
+          buttonsByClass.set(className, []);
+        }
+        buttonsByClass.get(className)!.push(button);
       }
+    }
+
+    for (const [className, buttons] of buttonsByClass.entries()) {
+      const cssRules = cssIndex.get(className) || [];
+      
+      components.push({
+        class: [{ 
+          name: className, 
+          position: 0
+        }],
+        css: cssRules.join('\n\n'),
+        html: buttons.join('\n'),
+      });
     }
     
     return components;
   }
+  private createCssIndex(css: string): Map<string, string[]> {
+    const cssIndex = new Map<string, string[]>();
+    const cssRegex = /([^{]+)\{([^}]+)\}/g;
+    
+    let match: RegExpExecArray | null;
+    while ((match = cssRegex.exec(css)) !== null) {
+      const selector = match[1].trim();
+      const content = match[2].trim();
 
-  private filterLayoutCss(css: string): string {
-    const layoutProps = [
-      'display', 'position', 'top', 'right', 'bottom', 'left',
-      'grid', 'grid-template', 'grid-area', 'grid-column', 'grid-row',
-      'flex', 'flex-direction', 'justify-content', 'align-items',
-      'float', 'clear', 'z-index', 'width', 'height', 'margin', 'padding',
-      'max-width', 'min-width', 'max-height', 'min-height',
-      'overflow', 'overflow-x', 'overflow-y', 'visibility',
-      'box-sizing', 'border-box', 'box-shadow', 'border', 'outline',
-      'gap', 'row-gap', 'column-gap', 'order', 'align-self', 'justify-self'
-    ];
-    
-    const blocks = this.splitCssIntoBlocks(css);
-    const layoutBlocks: string[] = [];
-    
-    for (const block of blocks) {
-      let hasLayout = false;
+      const classRegex = /\.([a-zA-Z_][a-zA-Z0-9_-]*)/g;
+      let classMatch: RegExpExecArray | null;
       
-      for (const prop of layoutProps) {
-        if (block.content.includes(prop + ':') || 
-            block.content.includes(prop + ' :')) {
-          hasLayout = true;
-          break;
+      while ((classMatch = classRegex.exec(selector)) !== null) {
+        const className = classMatch[1];
+        if (!cssIndex.has(className)) {
+          cssIndex.set(className, []);
         }
+        cssIndex.get(className)!.push(`${selector} {${content}}`);
+      }
+    }
+    
+    return cssIndex;
+  }
+  private extractClassPositions(html: string): Class[] {
+    const classes: Class[] = [];
+    let depth = 0;
+    
+    const tagRegex = /<([^>]+)>/g;
+    let match: RegExpExecArray | null;
+    
+    while ((match = tagRegex.exec(html)) !== null) {
+      const tag = match[1];
+      
+      if (tag.startsWith('/')) {
+        depth = Math.max(0, depth - 1);
+        continue;
       }
       
+      const classMatch = /class=["']([^"']+)["']/.exec(tag);
+      if (classMatch) {
+        classMatch[1].split(/\s+/).forEach(cls => {
+          if (cls.trim()) {
+            classes.push({ name: cls.trim(), position: depth });
+          }
+        });
+      }
+      
+      if (!this.isSelfClosingTag(tag)) {
+        depth++;
+      }
+    }
+    
+    const uniquePositions = new Map<string, number>();
+    classes.forEach(cls => {
+      if (!uniquePositions.has(cls.name) || uniquePositions.get(cls.name)! > cls.position) {
+        uniquePositions.set(cls.name, cls.position);
+      }
+    });
+    
+    return Array.from(uniquePositions.entries()).map(([name, position]) => ({
+      name,
+      position
+    }));
+  }
+
+  private filterLayoutCss(css: string): string {
+    const layoutProps = ['display', 'position', 'top', 'right', 'bottom', 'left', 'grid', 'flex', 'width', 'height', 'margin', 'padding'];
+    
+    const cssRegex = /([^{]+)\{([^}]+)\}/g;
+    const layoutBlocks: string[] = [];
+    
+    let match: RegExpExecArray | null;
+    while ((match = cssRegex.exec(css)) !== null) {
+      const selector = match[1].trim();
+      const content = match[2].trim();
+      
+      const hasLayout = layoutProps.some(prop => 
+        content.includes(prop + ':') || content.includes(prop + ' :')
+      );
+      
       if (hasLayout) {
-        layoutBlocks.push(block.fullBlock);
+        layoutBlocks.push(`${selector} {${content}}`);
       }
     }
     
     return layoutBlocks.join('\n\n');
+  }
+
+  private isSelfClosingTag(tag: string): boolean {
+    return /^(img|br|input|meta|link|hr)/i.test(tag);
   }
 
   private makeSimpleHtml(html: string): string {
@@ -252,22 +176,20 @@ class AnalyzerComponents {
     const tagRegex = /<([^>]+)>/g;
     let currentIndent = 0;
     
-    let tagMatch;
-    while ((tagMatch = tagRegex.exec(html)) !== null) {
-      const fullTag = tagMatch[0];
-      const tagContent = tagMatch[1];
+    let match: RegExpExecArray | null;
+    while ((match = tagRegex.exec(html)) !== null) {
+      const fullTag = match[0];
+      const tag = match[1];
       
-      if (tagContent.startsWith('/')) {
+      if (tag.startsWith('/')) {
         currentIndent = Math.max(0, currentIndent - 1);
         continue;
       }
       
-      if (this.isSelfClosingTag(tagContent)) {
-        const indent = '  '.repeat(currentIndent);
-        lines.push(indent + fullTag);
-      } else {
-        const indent = '  '.repeat(currentIndent);
-        lines.push(indent + fullTag);
+      const indent = '  '.repeat(currentIndent);
+      lines.push(indent + fullTag);
+      
+      if (!this.isSelfClosingTag(tag)) {
         currentIndent++;
       }
     }
