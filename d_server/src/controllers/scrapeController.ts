@@ -1,22 +1,17 @@
 import { Request, Response } from "express";
 import { SiteExtractor } from "../services/puppeteer";
 import { FontAndColor } from "../services/analyzer/fontColor";
-import { AnalyzerComponents } from "../services/analyzer/components";
 
 class ScrapeController {
   async getCode(req: Request, res: Response) {
     try {
+      const url = req.query.url as string;
+      
       const extractor = new SiteExtractor();
       const baza = new FontAndColor();
-      const componentsAnalyzer = new AnalyzerComponents();
-      const url = req.query.url as string;
 
       const { html, css, screenshot } = await extractor.extractAll(url);
-      
-      const [fontsAndColors, allComponents] = await Promise.all([
-        baza.extractAll(css),
-        componentsAnalyzer.extractAll(css, html)
-      ]);
+      const fontsAndColors = await baza.extractAll(css);
 
       res.json({
         success: true,
@@ -26,10 +21,8 @@ class ScrapeController {
         url,
         allColors: fontsAndColors.allColors,
         allFonts: fontsAndColors.allFonts,
-        allComponents
       });
     } catch (error) {
-      const err = error as Error;
       const errorStr = String(error);
 
       if (errorStr.includes("ERR_NAME_NOT_RESOLVED")) {
@@ -41,7 +34,7 @@ class ScrapeController {
       if (errorStr.includes("Navigation timeout")) {
         return res.status(408).json({
           success: false,
-          error: "Сайт не отвежает слишком долго",
+          error: "Сайт не отвечает слишком долго",
         });
       }
       if (errorStr.includes("ERR_CONNECTION_REFUSED")) {
@@ -57,6 +50,7 @@ class ScrapeController {
         });
       }
 
+      console.error("Ошибка в ScrapeController:", error);
       return res.status(500).json({
         success: false,
         error: "Ошибка при получении данных с сайта",
